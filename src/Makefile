@@ -11,7 +11,7 @@ main.o: main.cpp Matrix.hpp Vector.hpp Utilities.hpp
 Matrix.o: Matrix.hpp Matrix.cpp Vector.hpp Utilities.hpp
 	$(CXX) $(FLAGS) -c Matrix.cpp
 
-Vector.o: Vector.hpp Utilities.hpp Vector.cpp
+Vector.o: Vector.hpp Vector.cpp Utilities.hpp
 	$(CXX) $(FLAGS) -c Vector.cpp
 
 Utilities.o: Utilities.hpp Utilities.cpp

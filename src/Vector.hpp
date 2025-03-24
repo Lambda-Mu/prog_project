@@ -18,20 +18,19 @@ class Vector{
         head = new T[1];
     }
 
-    Vector<T>(uint space) : length(0), allocated(space) {
+    Vector<T>(const uint space, const uint length=0) : length(length), allocated(space) {
         head = new T[space];
     }
 
-    Vector<T>(uint quantity, const T& object) : length(quantity), allocated(quantity) {
-        head = new T[quantity];
-        for(int i=0; i<quantity; ++i)
+    Vector<T>(const uint space, const uint length, const T& object) : length(length), allocated(space) {
+        head = new T[space];
+        for(int i=0; i<length; ++i)
             head[i] = object;
     }
 
     Vector<T>(const Vector<T>& rhs) : length(rhs.length), allocated(rhs.allocated) {
         head = new T[rhs.allocated];
-        for(int i=0; i<rhs.length; ++i)
-            head[i] = rhs[i];
+        std::memcpy(head, rhs.head, rhs.length*sizeof(T));
     }
 
     Vector<T>(const std::initializer_list<T>& list) : length(0), allocated(list.size()) {
@@ -40,20 +39,18 @@ class Vector{
             pushBack(k);
     }
 
-    inline uint size() const{
-        return length;
-    }
-    inline uint capacity() const{
-        return allocated;
-    }
-    inline uint empty() const{
-        return !length;
-    }
+    inline uint capacity() const { return allocated; }
+    inline const T* data() const { return head; }
+    inline uint empty() const { return !length; }
+    inline uint size() const { return length; }
     
+    void copyBack(const T* const dataPointer, const uint numberOfObjectsToCopy);
+    void copyBack(const Vector<T>& dataVector, const uint begin, const uint end);
+    Vector<T> slice(const uint begin, const uint end);
+    void popBack();
+    void pushBack(const T& object);
     void reserve(const uint newSize);
     void resize(const uint newSize);
-    void pushBack(const T& object);
-    void popBack();
     
     inline T& operator[](const uint position) const{
         return head[position];
@@ -136,34 +133,30 @@ class Vector{
     uint allocated;
 };
 
-template <typename T>
-void Vector<T>::reserve(const uint newSize){
-    T* newHead = new T[newSize];
-    
-    if(length)
-        std::memcpy(newHead, head, sizeof(T)*length);
 
-    allocated = max(allocated, newSize);
+template<typename T>
+void Vector<T>::copyBack(const T* const dataPointer, const uint numberOfObjectsToCopy){
+    if(length + numberOfObjectsToCopy > allocated)
+        reserve(length + numberOfObjectsToCopy);
 
-    delete[] head;
-    head = newHead;
-    
+    std::memcpy(head + length, dataPointer, numberOfObjectsToCopy*sizeof(T));
+    length += numberOfObjectsToCopy;
     return;
 }
 
-template <typename T>
-void Vector<T>::resize(const uint newSize){
-    T* newHead = new T[newSize];
-    
-    if(length)
-        std::memcpy(newHead, head, sizeof(T)*min(newSize, length));
+template<typename T>
+void Vector<T>::copyBack(const Vector<T>& dataVector, const uint begin, const uint end){
+    if(length + end - begin > allocated)
+        reserve(length + end - begin);
 
-    allocated = max(allocated, newSize);
-    length = allocated;
+    std::memcpy(head + length, dataVector.data() + begin, (end-begin)*sizeof(T));
+    length += end - begin;
+    return;
+}
 
-    delete[] head;
-    head = newHead;
-    
+template<typename T>
+void Vector<T>::popBack(){
+    --length;            
     return;
 }
 
@@ -178,10 +171,42 @@ void Vector<T>::pushBack(const T& object){
     return;
 }
 
-template<typename T>
-void Vector<T>::popBack(){
-    --length;            
+template <typename T>
+void Vector<T>::reserve(const uint newSize){
+    T* newHead = new T[newSize];
+    
+    std::memcpy(newHead, head, length*sizeof(T));
+
+    allocated = max(allocated, newSize);
+
+    delete[] head;
+    head = newHead;
+    
     return;
+}
+
+template <typename T>
+void Vector<T>::resize(const uint newSize){
+    T* newHead = new T[newSize];
+    
+    std::memcpy(newHead, head, min(newSize, length)*sizeof(T));
+
+    allocated = newSize;
+    length = newSize;
+
+    delete[] head;
+    head = newHead;
+    
+    return;
+}
+
+template<typename T>
+Vector<T> Vector<T>::slice(const uint begin, const uint end){
+    uint size = end - begin;
+    Vector<T> subVec(size);
+    std::memcpy(subVec.head, head, size*sizeof(T));
+    subVec.length = size;
+    return subVec;
 }
 
 template<typename T>

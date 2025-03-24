@@ -2,46 +2,26 @@
 
 #include "Vector.hpp"
 #include "Utilities.hpp"
+#include "Matrix.hpp"
 #include <vector>
 
+using namespace std;
+
 int main(){
-    Vector<int> y;
 
-    cout << y[0] << endl << endl;
-    
-    for(int i=0; i<20; ++i){
-        y.pushBack(i);
-        cout << y.size() << ", " << y.capacity() << endl;
-        for(int j=0; j<=i; ++j)
-            cout << y[j] << ' ';
-        cout << endl << endl;
-    }
+    Matrix<bool> id(7);
 
-    for(int i: y)
-        cout << y[i] << ' ';
-    cout << endl;
+    id.print();
 
-    std::string k = "BLABLABLA";
-    Vector<std::string> x(10, k);
-    cout << &k << endl;
-    cout << &x[1] << endl;
-    cout << k << endl;
-    cout << x[1] << endl;
+    id.addRowMultiple(3, 2, 5);
 
-    Vector<int> z{1,3};
+    Matrix<bool> id2(1);
 
-    cout << endl;
-    cout << z;
-    cout << endl;
+    id2 = Matrix<bool>::transpose(id);
 
-    for(int i=0; i<z.size(); ++i)
-        cout << z[i] << " ";
-    cout << endl;
+    Matrix<bool>::transpose(id).print();
 
-    std::vector<int> p;
-    p.resize(100);
-
-    cout << p[50] << endl;
+    (id + id2).print();
 
     return 0;
 }
