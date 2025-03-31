@@ -8,20 +8,23 @@
 using namespace std;
 
 int main(){
+    srand(time(NULL));
 
-    Matrix<bool> id(7);
+    const unsigned int N = 4; 
+    Matrix<bool> id(4);
+
+    for(int i=0; i<4; ++i){
+        for(int j=0; j<4; ++j)
+            id(i,j) = rand() %2;
+    }
 
     id.print();
+    
+    Matrix<bool> Q(4);
+    Matrix<bool> Qinv(4);
 
-    id.addRowMultiple(3, 2, 5);
-
-    Matrix<bool> id2(1);
-
-    id2 = Matrix<bool>::transpose(id);
-
-    Matrix<bool>::transpose(id).print();
-
-    (id + id2).print();
+    Matrix<bool>::getRowEchelonForm(id, Q, Qinv);
+    id.print();
 
     return 0;
 }

@@ -26,28 +26,27 @@ public:
     inline uint index(const uint row, const uint column) const { return row*cols + column; }
 
     inline const Vector<T>& data() const { return matrix; }
-    inline T get(const uint row, uint const column) const { return matrix[row*cols + column]; }
-    inline T& get(const uint row, const uint column) { return matrix[row*cols + column]; }
     Vector<T> getRow(const uint row) const;
     Vector<T> getColumn(const uint column) const;
-    inline void nextRow(uint& index) const { index+=cols; }
-    inline void nextColumn(uint& index) const { ++index; }
-    void print(std::string endChar = "\n", std::ostream& outputStream = std::cout) const;
+    inline void moveToNextRow(uint& index) const { index+=cols; }
+    inline void moveToNextColumn(uint& index) const { ++index; }
+    void print(const std::string endChar = "\n", std::ostream& outputStream = std::cout) const;
     Matrix slice(const uint rowBegin, const uint rowEnd, const uint columnBegin, const uint columnEnd) const;
     Matrix static transpose(const Matrix<T>& base);
 
     inline T operator()(const uint row, const uint column) const { return matrix[row*cols + column]; }
     inline T& operator()(const uint row, const uint column) { return matrix[row*cols + column]; }
-
     template<typename U>
     friend Matrix<U> operator+(const Matrix<U>& a, const Matrix<U>& b);
+    template<typename U>
+    friend Matrix<U> operator*(const Matrix<U>& a, const Matrix<U>& b);
 
-    void swapRows(uint rowA, uint rowB);
-    void swapColumns(uint columnA, uint columnB);
-    void changeRowSign(uint row);
-    void changeColumnSign(uint column);
-    void addRowMultiple(uint row, uint addedRow, T multiple);
-    void addColumnMultiple(uint column, uint addedColumn, T multiple);
+    void swapRows(const uint rowA, const uint rowB);
+    void swapColumns(const uint columnA, const uint columnB);
+    void changeRowSign(const uint row);
+    void changeColumnSign(const uint column);
+    void addRowMultiple(const uint row, const uint addedRow, const T multiple);
+    void addColumnMultiple(const uint column, const uint addedColumn, const T multiple);
 
     void static swapRowsOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint rowA, const uint rowB);
     void static swapColumnsOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint columnA, const uint columnB);
@@ -56,15 +55,29 @@ public:
     void static addRowMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint row, const uint addedRow, const T multiple);
     void static addColumnMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint addedColumn, const uint column, const T multiple);
 
-    void static reduceRowPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint row, const uint column);
-    void static reduceColumnPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint row, const uint column);
+    void static reduceColumnValuesPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint startRow, const uint column);
+    void static reduceRowValuesPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q_, const uint row, const uint startColumn);
+
+    OneIndexedValue<T> findSmallestNonzeroInRow(const uint row, const uint startColumn) const;
+    OneIndexedValue<T> findSmallestNonzeroInColumn(const uint startRow, const uint column) const;
+    DoubleIndexedValue<T> findSmallestNonzeroInSubmatrix(const uint firstDiagonalEntryIndex) const;
+
+    bool isRowZero(const uint startRow, const uint column) const;
+    bool isColumnZero(const uint startRow, const uint column) const;
+
+    void static prepareRow(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column);
+    void static prepareColumn(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column);
+    
+    void static reduceRow(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column);
+    void static reduceColumn(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column);
+
+    void static getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv);
 
 private:
     Vector<T> matrix;
     uint rows;
     uint cols;
 };
-
 
 template<typename T>
 Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b){
@@ -89,7 +102,7 @@ Vector<T> Matrix<T>::getColumn(const uint column) const{
 }
 
 template<typename T>
-void Matrix<T>::print(std::string endChar, std::ostream& out) const{
+void Matrix<T>::print(const std::string endChar, std::ostream& out) const{
     for(uint i=0; i<rows; ++i){
         for(uint j=0; j<cols; ++j)
             out << (*this)(i, j) << ' ';
@@ -99,7 +112,7 @@ void Matrix<T>::print(std::string endChar, std::ostream& out) const{
 }
 
 template<typename T>
-Matrix<T> Matrix<T>::slice(uint rowBegin, uint rowEnd, uint columnBegin, uint columnEnd) const{
+Matrix<T> Matrix<T>::slice(const uint rowBegin, const uint rowEnd, const uint columnBegin, const uint columnEnd) const{
     Vector<T> submatrix;
     // if(columnEnd < columnBegin && rowEnd < rowBegin)
         // return Matrix(1, 1, Vector<T>{0});
@@ -170,16 +183,16 @@ void Matrix<T>::addColumnMultiple(const uint column, const uint addedColumn, con
 
 template<typename T>
 void Matrix<T>::swapRowsOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint rowA, const uint rowB){
-    B.exchangeRows(rowA, rowB);
-    Qinv.exchangeRows(rowA, rowB);
-    Q.exchangeColumns(rowA, rowB);
+    B.swapRows(rowA, rowB);
+    Qinv.swapRows(rowA, rowB);
+    Q.swapColumns(rowA, rowB);
 }
 
 template<typename T>
 void Matrix<T>::swapColumnsOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint columnA, const uint columnB){
-    B.exchangeColumns(columnA, columnB);
-    Q.exchangeColumns(columnA, columnB);    
-    Qinv.exchangeRows(columnA, columnB);
+    B.swapColumns(columnA, columnB);
+    Q.swapColumns(columnA, columnB);    
+    Qinv.swapRows(columnA, columnB);
 }
 
 template<typename T>
@@ -198,6 +211,8 @@ void Matrix<T>::changeColumnSignOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>&
 
 template<typename T>
 void Matrix<T>::addRowMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint addedRow, const T multiple){
+    if(multiple == 0)
+        return;
     B.addRowMultiple(row, addedRow, multiple);
     Q.addColumnMultiple(row, addedRow, -multiple);
     Qinv.addRowMultiple(row, addedRow, multiple);
@@ -205,27 +220,136 @@ void Matrix<T>::addRowMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q
 
 template<typename T>
 void Matrix<T>::addColumnMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint column, const uint addedColumn, const T multiple){
+    if(multiple == 0)
+        return;
     B.addColumnMultiple(column, addedColumn, multiple);
     Q.addColumnMultiple(column, addedColumn, multiple);
     Qinv.addRowMultiple(column, addedColumn, -multiple);
 }
 
 template<typename T>
-void Matrix<T>::reduceRowPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column){
-    T s = B.get(row, column);
+void Matrix<T>::reduceRowValuesPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint startColumn){
+    T s = B(row, startColumn);
     for(uint i=row+1; i<B.rowNumber(); ++i){
-        T r = B.get(i, column);
+        T r = B(i, startColumn);
         Matrix::addRowMultipleOperation(B, Q, Qinv, i, row, -floor(r, s));
     }
 }
 
 template<typename T>
-void Matrix<T>::reduceColumnPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column){
-    T s = B.get(row, column);
+void Matrix<T>::reduceColumnValuesPartially(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint startRow, const uint column){
+    T s = B(startRow, column);
     for(uint i=column+1; i<B.colNumber(); ++i){
-        T r = B.get(row, i);
+        T r = B(startRow, i);
         Matrix::addColumnMultipleOperation(B, Q, Qinv, column, i, -floor(r, s));
     }
+}
+
+template<typename T>
+OneIndexedValue<T> Matrix<T>::findSmallestNonzeroInRow(const uint row, const uint startColumn) const{
+    uint indexMin = startColumn;
+    T value = absoluteValue((*this)(row, startColumn));
+    for(uint i=startColumn+1; i<cols; ++i){
+        if((absoluteValue((*this)(row, i)) < value and (*this)(row, i) != 0) or value == 0){
+            value = absoluteValue((*this)(row, i));
+            indexMin = i;
+            if(value == 1)
+                return OneIndexedValue<T>(indexMin, value);
+        }
+    }
+    return OneIndexedValue<T>(indexMin, value);
+}
+
+template<typename T>
+OneIndexedValue<T> Matrix<T>::findSmallestNonzeroInColumn(const uint startRow, const uint column) const{
+    uint indexMin = startRow;
+    T value = absoluteValue((*this)(startRow, column));
+    for(uint i=startRow+1; i<rows; ++i){
+        if((absoluteValue((*this)(i, column)) < value and (*this)(i, column) != 0) or value == 0){
+            value = absoluteValue((*this)(i, column));
+            indexMin = i;
+        }
+    }
+    return OneIndexedValue<T>(indexMin, value);
+}
+
+template<typename T>
+DoubleIndexedValue<T> Matrix<T>::findSmallestNonzeroInSubmatrix(const uint firstDiagonalEntryIndex) const{
+    T value = absoluteValue((*this)(firstDiagonalEntryIndex, firstDiagonalEntryIndex));
+    uint rowIndex = firstDiagonalEntryIndex;
+    uint columnIndex = firstDiagonalEntryIndex;
+    uint dataIndex{};
+    for(int i=firstDiagonalEntryIndex; i<rows; ++i){
+        dataIndex = index(i, firstDiagonalEntryIndex);
+        for(int j=firstDiagonalEntryIndex; j<cols; ++j){
+            if( (absoluteValue(matrix[dataIndex]) < value and matrix[dataIndex] != 0) or value == 0 ){
+                value = matrix[dataIndex];
+                rowIndex = i;
+                columnIndex = j;
+            }
+            ++dataIndex;
+        }
+    }    
+    return DoubleIndexedValue<T>(value, rowIndex, columnIndex);
+}
+
+template<typename T>
+bool Matrix<T>::isRowZero(const uint row, const uint startColumn) const{
+    for(uint i=startColumn; i<cols; ++i){
+        if((*this)(row, i) != 0)
+            return false;
+    }
+    return true;
+}
+
+template<typename T>
+bool Matrix<T>::isColumnZero(const uint startRow, const uint column) const{
+    for(uint i=startRow; i<rows; ++i){
+        if((*this)(i, column) != 0)
+            return false;
+    }
+    return true;
+}
+
+template<typename T>
+void Matrix<T>::prepareRow(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column){
+    Matrix::swapRowsOperation(B, Q, Qinv, row, B.findSmallestNonzeroInColumn(row, column).index); 
+}
+
+template<typename T>
+void Matrix<T>::prepareColumn(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column){
+    Matrix::swapColumnsOperation(B, Q, Qinv, column, B.findSmallestNonzeroInRow(row, column).index); 
+}
+
+template<typename T>
+void Matrix<T>::reduceRow(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column){
+    while(!B.isColumnZero(row+1, column)){
+        prepareRow(B, Q, Qinv, row, column);
+        reduceRowValuesPartially(B, Q, Qinv, row, column);
+    }
+}
+
+template<typename T>
+void Matrix<T>::reduceColumn(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column){
+    while(!B.isRowZero(row, column+1)){
+        prepareColumn(B, Q, Qinv, row, column);
+        reduceColumnValuesPartially(B, Q, Qinv, row, column);
+    }
+}
+
+template<typename T>
+void Matrix<T>::getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv){
+    uint row = 0;
+    uint column = 0;
+    do{
+        while(column < B.cols and B.isColumnZero(row, column))
+            ++column;
+        if(column == B.cols) 
+            break;
+        B.print();
+        reduceRow(B, Q, Qinv, row, column);
+        ++row;
+    }while(row < B.rows);
 }
 
 #endif
