@@ -71,9 +71,10 @@ public:
     void static reduceRow(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column);
     void static reduceColumn(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint column);
 
-    void static getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv);
+    void static getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, uint& k);
+    void static getColumnEchelonForm(Matrix<T>& B, Matrix<T>& R, Matrix<T>& Rinv, uint& k);
 
-private:
+protected:
     Vector<T> matrix;
     uint rows;
     uint cols;
@@ -86,6 +87,18 @@ Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b){
     for(uint i=0; i<size; ++i)
         sum[i] = a.matrix[i] + b.matrix[i];
     return Matrix(a.rows, a.cols, sum);
+}
+
+template<typename T>
+Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b){
+    Vector<T> product(a.rows * b.cols, a.rows * b.cols, 0);
+    for(uint i=0; i<a.rows; ++i){
+        for(uint j=0; j<b.cols; ++j){
+            for(uint k=0; k<a.cols; ++k)
+                product[i * b.cols + j] += a(i,k) + b(k, j);
+        }
+    }
+    return Matrix(a.rows, b.cols, product);
 }
 
 template<typename T>
@@ -338,7 +351,7 @@ void Matrix<T>::reduceColumn(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const 
 }
 
 template<typename T>
-void Matrix<T>::getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv){
+void Matrix<T>::getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, uint& k){
     uint row = 0;
     uint column = 0;
     do{
@@ -350,6 +363,24 @@ void Matrix<T>::getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv){
         reduceRow(B, Q, Qinv, row, column);
         ++row;
     }while(row < B.rows);
+    k = row;
+    return;
+}
+
+template<typename T>
+void Matrix<T>::getColumnEchelonForm(Matrix<T>& B, Matrix<T>& R, Matrix<T>& Rinv, uint& k){
+    int row = 0;
+    int column = 0;
+    do{
+        while(row < B.rows and B.isRowZero(row, column)) 
+            ++row;
+        if(row == B.rows) 
+            break;
+        reduceColumn(B, R, Rinv, row, column);
+        ++column;
+    }while(column < B.cols);
+    k = column;
+    return;
 }
 
 #endif

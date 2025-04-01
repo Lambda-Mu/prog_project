@@ -23,7 +23,7 @@ int main(){
     Matrix<bool> Q(4);
     Matrix<bool> Qinv(4);
 
-    Matrix<bool>::getRowEchelonForm(id, Q, Qinv);
+    // Matrix<bool>::getRowEchelonForm(id, Q, Qinv);
     id.print();
 
     return 0;

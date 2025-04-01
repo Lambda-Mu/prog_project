@@ -10,6 +10,18 @@ Matrix<bool> operator+(const Matrix<bool>& a, const Matrix<bool>& b){
 }
 
 template<>
+Matrix<bool> operator*(const Matrix<bool>& a, const Matrix<bool>& b){
+    Vector<bool> product(a.rows * b.cols, a.rows * b.cols, 0);
+    for(uint i=0; i<a.rows; ++i){
+        for(uint j=0; j<b.cols; ++j){
+            for(uint k=0; k<a.cols; ++k)
+                product[i * b.cols + j] = product[i * b.cols + j] xor a(i,k) xor b(k, j);
+        }
+    }
+    return Matrix(a.rows, b.cols, product);
+}
+
+template<>
 void Matrix<bool>::addRowMultiple(const uint row, const uint addedRow, const bool multiple){
     for(uint i=0; i<cols; ++i)
         (*this)(row, i) = (*this)(row, i) xor (*this)(addedRow, i);
