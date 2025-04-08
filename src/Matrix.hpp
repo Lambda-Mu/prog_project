@@ -21,6 +21,11 @@ public:
         matrix = identity;
     }
 
+    Matrix(const Matrix<T>& M)
+        : rows(M.rows), cols(M.cols) {
+            matrix = M.matrix;
+        }
+
     inline uint rowNumber() const { return rows; }
     inline uint colNumber() const { return cols; }
     inline uint index(const uint row, const uint column) const { return row*cols + column; }
@@ -224,8 +229,6 @@ void Matrix<T>::changeColumnSignOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>&
 
 template<typename T>
 void Matrix<T>::addRowMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint row, const uint addedRow, const T multiple){
-    if(multiple == 0)
-        return;
     B.addRowMultiple(row, addedRow, multiple);
     Q.addColumnMultiple(row, addedRow, -multiple);
     Qinv.addRowMultiple(row, addedRow, multiple);
@@ -233,8 +236,6 @@ void Matrix<T>::addRowMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Q
 
 template<typename T>
 void Matrix<T>::addColumnMultipleOperation(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, const uint column, const uint addedColumn, const T multiple){
-    if(multiple == 0)
-        return;
     B.addColumnMultiple(column, addedColumn, multiple);
     Q.addColumnMultiple(column, addedColumn, multiple);
     Qinv.addRowMultiple(column, addedColumn, -multiple);
@@ -359,7 +360,6 @@ void Matrix<T>::getRowEchelonForm(Matrix<T>& B, Matrix<T>& Q, Matrix<T>& Qinv, u
             ++column;
         if(column == B.cols) 
             break;
-        B.print();
         reduceRow(B, Q, Qinv, row, column);
         ++row;
     }while(row < B.rows);

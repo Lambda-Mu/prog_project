@@ -6,27 +6,30 @@
 typedef unsigned int uint;
 
 template<typename T>
-class RowEchelon{
-    RowEchelon(Matrix<T>& B)
-        : B(B) {
-            Q = Matrix<T>(B.rows);
-            Qinv = Matrix<T>(B.rows);
-            getRowEchelonForm(B, Q, Qinv, lastNonzeroRow);
+class RowEchelon : public Matrix<T>{
+public:
+    RowEchelon(const Matrix<T>& M)
+        {
+            *this = M;
+            Q = Matrix<T>(M.rowNumber());
+            Qinv = Matrix<T>(M.rowNumber());
+            Matrix<T>::getRowEchelonForm(*this, Q, Qinv, lastNonzeroRow);
         }
 
-    const Matrix<T> B;
-    const Matrix<T> Q;
-    const Matrix<T> Qinv;
-    const uint lastNonzeroRow;
+    Matrix<T> getOriginal() const{
+        return Q * (*this);
+    }
+
+    Matrix<T> Q;
+    Matrix<T> Qinv;
+    uint lastNonzeroRow;
 };
 
 template<typename T>
 class ColumnEchelon{
-    ColumnEchelon(Matrix<T>& B)
-        : B(B) {
-            R = Matrix<T>(B.rows);
-            Rinv = Matrix<T>(B.rows);
-            getColumnEchelonForm(B, R, Rinv, lastNonzeroColumn);
+    ColumnEchelon(const Matrix<T>& M)
+        : B(M), R(Matrix<T>(M.colNumber())), Rinv(Matrix<T>(M.colNumber())) {
+            Matrix<T>::getColumnEchelonForm(B, R, Rinv, lastNonzeroColumn);
         }
 
 private:
