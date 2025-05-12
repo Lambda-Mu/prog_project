@@ -43,9 +43,13 @@ template<typename T>
 T floor(const T& dividend, const T& divisor){
     if(dividend == 0)
         return dividend;
-    if(dividend < 0 xor divisor < 0)
+    if(dividend < 0 xor divisor < 0 and dividend % divisor != 0)
         return dividend / divisor - 1;
     return dividend / divisor;
+}
+
+inline bool floor(const bool dividend, const bool divisor){
+    return dividend;
 }
 
 template<typename T>
@@ -58,10 +62,6 @@ T absoluteValue(const T a){
 // inline bool abs(const bool value){
 //     return value;
 // }
-
-inline bool floor(const bool dividend, const bool divisor){
-    return dividend;
-}
 
 template<typename T>
 struct OneIndexedValue{

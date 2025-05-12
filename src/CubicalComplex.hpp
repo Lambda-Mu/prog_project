@@ -5,10 +5,13 @@
 #include <charconv>
 #include <iostream>
 #include <set>
+#include <map>
+#include <queue>
 
 #include "Vector.hpp"
+#include "LefschetzComplex.hpp"
 
-using std::string, std::cout;
+using std::string, std::cout, std::map, std::set;
 
 class Block{
     public:
@@ -55,11 +58,11 @@ public:
     Cube(const Vector<Block>& buildingBlocks)
         : buildingBlocks(buildingBlocks) {
         uint nonDegenerateBlocks = 0;
-        for(uint i=0; i<dimension(); ++i){
+        for(uint i=0; i<embeddingDimension(); ++i){
             if((*this)[i].nonDegenerate())
                 ++nonDegenerateBlocks;
         }
-        embeddingNumber = nonDegenerateBlocks;
+        dim = nonDegenerateBlocks;
     }
     Cube(const string& str){
         uint beginSearch = 0;
@@ -70,15 +73,15 @@ public:
             foundIndex = str.find('x', beginSearch);
         }
         buildingBlocks.pushBack(str.substr(beginSearch, str.size()));
-        embeddingNumber = 0;
+        dim = 0;
         for(uint i=0; i<buildingBlocks.size(); ++i){
             if(buildingBlocks[i].nonDegenerate())
-                ++embeddingNumber;
+                ++dim;
         }
     }
 
-    inline uint embeddingDimension() const { return embeddingNumber; }
-    inline uint dimension() const { return buildingBlocks.size(); }
+    inline uint dimension() const { return dim; }
+    inline uint embeddingDimension() const { return buildingBlocks.size(); }
     inline Block& operator[](uint position) { return buildingBlocks[position]; }
     inline Block& operator[](uint position) const { return buildingBlocks[position]; }
     Vector<Cube> getPrimaryFaces() const;
@@ -92,7 +95,7 @@ public:
     inline friend bool operator>=(const Cube& left, const Cube& right) { return (left>right) or (left==right); }
 
 private:
-    uint embeddingNumber;
+    uint dim;
     Vector<Block> buildingBlocks;
 };
 
@@ -106,7 +109,7 @@ public:
     void clear() { cubes.clear(); }
     void add(const string& cube) { cubes.pushBack(Cube(cube)); }
     inline bool empty() const { return cubes.empty(); }
-    inline uint dimension() const { return cubes[0].dimension(); }
+    inline uint embeddingDimension() const { return cubes[0].dimension(); }
     inline uint numberOfCubes() const { return cubes.size(); }
     static void getFromFile(const string& filename, CubicalSet& cubicalSet);
     std::set<Cube> getAllFaces() const;
@@ -117,6 +120,39 @@ private:
     Vector<Cube> cubes;
 };
 
+class CubicalComplexZ2 : public LefschetzComplex<Cube, bool>{
+public:
+    CubicalComplexZ2(const CubicalSet& skeleton){
+        std::queue<Cube> cubes;
+        for(uint i=0; i<skeleton.numberOfCubes(); ++i){
+            cubes.push(skeleton[i]);
+            bases[skeleton[i].dimension()].insert(skeleton[i]);
+        }
 
+        while(!cubes.empty()){
+            Cube cube = cubes.front();
+            Vector<Cube> faces = cube.getPrimaryFaces();
+            for(Cube& q : faces){
+                cubes.push(q);
+                bases[q.dimension()].insert(q);
+                if(incidence[cube.dimension()].count(cube) == 1){
+                    incidence[cube.dimension()][cube].insert(q);
+                }
+                else{
+                    incidence[cube.dimension()][cube] = set<Cube>{q};
+                }
+            }
+            cubes.pop();
+        }
+    }
+
+    bool operator()(const Cube& a, const Cube& b){
+        return incidence[a.dimension()][a].count(b);
+    }
+
+private:
+    Vector<set<Cube>> bases;
+    Vector<map<Cube, set<Cube>>> incidence;
+};
 
 #endif

@@ -14,10 +14,10 @@ std::ostream& operator<<(std::ostream& out, const Block& block){
 }
 
 std::ostream& operator<<(std::ostream& out, const Cube& cube){
-    for(uint i=0; i<cube.dimension()-1; ++i){
+    for(uint i=0; i<cube.embeddingDimension()-1; ++i){
         out << cube[i] << 'x';
     }
-    out << cube[cube.dimension()-1];
+    out << cube[cube.embeddingDimension()-1];
     return out;
 }
 
@@ -38,7 +38,7 @@ bool operator==(const Block& left, const Block& right){
 }
 
 bool operator==(const Cube& left, const Cube& right){
-    if(left.embeddingNumber != right.embeddingNumber)
+    if(left.dimension() != right.dimension())
         return false;
     return left.buildingBlocks == right.buildingBlocks;
 }
@@ -54,8 +54,8 @@ bool operator<(const Block& left, const Block& right){
 }
 
 bool operator<(const Cube& left, const Cube& right){
-    uint leftEmb = left.embeddingNumber;
-    uint rightEmb = right.embeddingNumber;
+    uint leftEmb = left.dimension();
+    uint rightEmb = right.dimension();
     if(leftEmb < rightEmb)
         return true;
     if(rightEmb < leftEmb)
@@ -72,7 +72,8 @@ bool operator<(const Cube& left, const Cube& right){
 void CubicalSet::getFromFile(const string& filename, CubicalSet& cubicalSet){
     std::ifstream input(filename);
     if(!input.is_open()){
-        std::cerr << "Couldn't open file: \"" << filename << "\" during execution of CubicalSet::getFromFile. Errors may occur.\n";
+        std::cerr << "Couldn't open file: \"" << filename << "\"";
+        std::cerr << "during execution of CubicalSet::getFromFile. Errors may occur.\n";
         return;
     }
     cubicalSet.clear();
@@ -86,8 +87,8 @@ void CubicalSet::getFromFile(const string& filename, CubicalSet& cubicalSet){
 }
 
 Vector<Cube> Cube::getPrimaryFaces() const{
-    Vector<Cube> primaryFaces(2*embeddingDimension());
-    for(uint i=0; i<dimension(); ++i){
+    Vector<Cube> primaryFaces(2*dimension());
+    for(uint i=0; i<embeddingDimension(); ++i){
         if(!buildingBlocks[i].nonDegenerate())
             continue;
         Cube face(*this);

@@ -1,30 +1,17 @@
 #ifndef LEFSCHETZ_COMPLEX_H
 #define LEFSCHETZ_COMPLEX_H
 
-#include <map>
-#include <set>
-
 #include "Vector.hpp"
 
-using std::multimap, std::set;
-
-template<class Cell>
-class LefschetzComplexZ2{
+template<class Cell, typename M>
+class LefschetzComplex{
 public:
-    LefschetzComplexZ2(const Vector<set<Cell>>& cells, const Vector<multimap<Cell, Cell>>& incidenceMap)
-        : cells(cells), incidenceMap(incidenceMap) { }
-
-    bool incidence(const Cell& cube, const Cell& face) const;
-
-private:
-    Vector<set<Cell>> cells;
-    Vector<multimap<Cell, Cell>> incidenceMap;
+    virtual M operator()(const Cell& a, const Cell& b) const = 0;
+    virtual Vector<Cell> getBase(int dimension) const = 0;
+    virtual Vector<M> getCoordinates(const Vector<Cell>& cells) const = 0;
+    // virtual void reduce(const Cell& cell, const Cell& face) = 0;
 };
 
-// template<class Cell>
-// bool LefschetzComplexZ2<Cell>::incidence(const Cell& cube, const Cell& face) const{
-    
-// }
 
 
 #endif

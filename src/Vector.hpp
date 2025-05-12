@@ -14,27 +14,27 @@ typedef unsigned int uint;
 template<typename T>
 class Vector{
     public:
-    Vector<T>() : length(0), allocated(1) {
+    Vector() : length(0), allocated(1) {
         head = new T[1];
     }
 
-    Vector<T>(const uint space, const uint length=0) : length(length), allocated(space) {
+    Vector(uint space, uint length=0) : length(length), allocated(space) {
         head = new T[space];
     }
 
-    Vector<T>(const uint space, const uint length, const T& object) : length(length), allocated(space) {
+    Vector(uint space, uint length, const T& object) : length(length), allocated(space) {
         head = new T[space];
         for(int i=0; i<length; ++i)
             head[i] = object;
     }
 
-    Vector<T>(const Vector<T>& rhs) : length(rhs.length), allocated(rhs.allocated) {
+    Vector(const Vector<T>& rhs) : length(rhs.length), allocated(rhs.allocated) {
         head = new T[rhs.allocated];
         for(uint i=0; i<rhs.length; ++i)
             head[i] = rhs[i];
     }
 
-    Vector<T>(const std::initializer_list<T>& list) : length(0), allocated(list.size()) {
+    Vector(const std::initializer_list<T>& list) : length(0), allocated(list.size()) {
         head = new T[list.size()];
         for(const T k : list)
             pushBack(k);
@@ -46,18 +46,18 @@ class Vector{
     inline uint size() const { return length; }
     
     void clear();
-    void copyBack(const T* const dataPointer, const uint numberOfObjectsToCopy);
-    void copyBack(const Vector<T>& dataVector, const uint begin, const uint end);
-    Vector<T> slice(const uint begin, const uint end);
+    void copyBack(const T* const dataPointer, uint numberOfObjectsToCopy);
+    void copyBack(const Vector<T>& dataVector, uint begin, uint end);
+    Vector<T> slice(uint begin, uint end);
     void popBack();
     void pushBack(const T& object);
-    void reserve(const uint newSize);
-    void resize(const uint newSize);
+    void reserve(uint newSize);
+    void resize(uint newSize);
 
     template<typename U>
     friend bool operator==(const Vector<U>& left, const Vector<U> right);
     
-    inline T& operator[](const uint position) const{
+    inline T& operator[](uint position) const{
         return head[position];
     }
 
@@ -75,7 +75,7 @@ class Vector{
     template<typename U>
     friend std::ostream& operator<<(std::ostream& out, const Vector<U>& v);
 
-    ~Vector<T>(){
+    ~Vector(){
         delete[] head;
         head = nullptr;
     }
@@ -149,7 +149,7 @@ void Vector<T>::clear(){
 }
 
 template<typename T>
-void Vector<T>::copyBack(const T* const dataPointer, const uint numberOfObjectsToCopy){
+void Vector<T>::copyBack(const T* const dataPointer, uint numberOfObjectsToCopy){
     if(length + numberOfObjectsToCopy > allocated)
         reserve(length + numberOfObjectsToCopy);
 
@@ -161,7 +161,7 @@ void Vector<T>::copyBack(const T* const dataPointer, const uint numberOfObjectsT
 }
 
 template<typename T>
-void Vector<T>::copyBack(const Vector<T>& dataVector, const uint begin, const uint end){
+void Vector<T>::copyBack(const Vector<T>& dataVector, uint begin, uint end){
     if(length + end - begin > allocated)
         reserve(length + end - begin);
 
@@ -190,7 +190,7 @@ void Vector<T>::pushBack(const T& object){
 }
 
 template <typename T>
-void Vector<T>::reserve(const uint newSize){
+void Vector<T>::reserve(uint newSize){
     T* newHead = new T[newSize];
     
     // std::memcpy(newHead, head, length*sizeof(T));
@@ -207,7 +207,7 @@ void Vector<T>::reserve(const uint newSize){
 }
 
 template <typename T>
-void Vector<T>::resize(const uint newSize){
+void Vector<T>::resize(uint newSize){
     T* newHead = new T[newSize];
     
     // std::memcpy(newHead, head, min(newSize, length)*sizeof(T));
@@ -225,7 +225,7 @@ void Vector<T>::resize(const uint newSize){
 }
 
 template<typename T>
-Vector<T> Vector<T>::slice(const uint begin, const uint end){
+Vector<T> Vector<T>::slice(uint begin, uint end){
     uint size = end - begin;
     Vector<T> subVec(size);
     subVec.copyBack(*this, begin, end);

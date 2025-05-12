@@ -22,19 +22,19 @@ Matrix<bool> operator*(const Matrix<bool>& a, const Matrix<bool>& b){
 }
 
 template<>
-void Matrix<bool>::addRowMultiple(const uint row, const uint addedRow, const bool multiple){
+void Matrix<bool>::addRowMultiple(uint row, uint addedRow, const bool multiple){
     for(uint i=0; i<cols; ++i)
         (*this)(row, i) = (*this)(row, i) xor (*this)(addedRow, i);
 }
 
 template<>
-void Matrix<bool>::addColumnMultiple(const uint column, const uint addedColumn, const bool multiple){
+void Matrix<bool>::addColumnMultiple(uint column, uint addedColumn, const bool multiple){
     for(uint i=0; i<rows; ++i)
         (*this)(i, column) = (*this)(i, column) xor (*this)(i, addedColumn);
 }
 
 template<>
-void Matrix<bool>::reduceRowValuesPartially(Matrix<bool>& B, Matrix<bool>& Q, Matrix<bool>& Qinv, const uint row, const uint startColumn){
+void Matrix<bool>::reduceRowValuesPartially(Matrix<bool>& B, Matrix<bool>& Q, Matrix<bool>& Qinv, uint row, uint startColumn){
     bool s = B(row, startColumn);
     for(uint i=row+1; i<B.rowNumber(); ++i){
         if(B(i, startColumn))
@@ -43,7 +43,7 @@ void Matrix<bool>::reduceRowValuesPartially(Matrix<bool>& B, Matrix<bool>& Q, Ma
 }
 
 template<>
-void Matrix<bool>::reduceColumnValuesPartially(Matrix<bool>& B, Matrix<bool>& Q, Matrix<bool>& Qinv, const uint startRow, const uint column){
+void Matrix<bool>::reduceColumnValuesPartially(Matrix<bool>& B, Matrix<bool>& Q, Matrix<bool>& Qinv, uint startRow, uint column){
     bool s = B(startRow, column);
     for(uint i=column+1; i<B.colNumber(); ++i){
         if(B(startRow, i))
@@ -52,7 +52,7 @@ void Matrix<bool>::reduceColumnValuesPartially(Matrix<bool>& B, Matrix<bool>& Q,
 }
 
 template<>
-OneIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInRow(const uint row, const uint startColumn) const{
+OneIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInRow(uint row, uint startColumn) const{
     for(uint k = startColumn; k<cols; ++k){
         if((*this)(row,k))
             return OneIndexedValue<bool>(k, 1);
@@ -61,7 +61,7 @@ OneIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInRow(const uint row, con
 }
 
 template<>
-OneIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInColumn(const uint startRow, const uint column) const{
+OneIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInColumn(uint startRow, uint column) const{
     for(uint k = startRow; k<rows; ++k){
         if((*this)(k,column))
             return OneIndexedValue<bool>(k, 1);
@@ -70,8 +70,8 @@ OneIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInColumn(const uint start
 }
 
 template<>
-DoubleIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInSubmatrix(const uint firstDiagonalEntryIndex) const{
-    int value = (firstDiagonalEntryIndex, firstDiagonalEntryIndex);
+DoubleIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInSubmatrix(uint firstDiagonalEntryIndex) const{
+    int value = (*this)(firstDiagonalEntryIndex, firstDiagonalEntryIndex);
     int rowIndex = firstDiagonalEntryIndex;
     int columnIndex = firstDiagonalEntryIndex;
     int dataIndex{};
@@ -82,6 +82,6 @@ DoubleIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInSubmatrix(const uint
                 return DoubleIndexedValue<bool>(1, i, j);
             ++dataIndex;
         }
-    }    
+    }
     return DoubleIndexedValue<bool>(value, rowIndex, columnIndex);
 }
