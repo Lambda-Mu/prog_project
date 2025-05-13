@@ -85,3 +85,43 @@ DoubleIndexedValue<bool> Matrix<bool>::findSmallestNonzeroInSubmatrix(uint first
     }
     return DoubleIndexedValue<bool>(value, rowIndex, columnIndex);
 }
+
+template<>
+void Matrix<bool>::getPartialSmithForm(Matrix<bool>& matrix, Matrix<bool>& rowBase, Matrix<bool>& rowBaseInv,
+    Matrix<bool>& columnBase, Matrix<bool>& columnBaseInv, uint diagonalEntryIndex)
+{
+    while(1){
+        uint k = diagonalEntryIndex;
+        moveMinimalNonzero(matrix, rowBase, rowBaseInv, columnBase, columnBaseInv, k);
+        reduceRowValuesPartially(matrix, rowBase, rowBaseInv, k, k);
+        if(matrix.findSmallestNonzeroInColumn(k, k+1).value != 0)
+            continue;
+        reduceColumnValuesPartially(matrix, columnBase, columnBaseInv, k, k);
+        if(matrix.findSmallestNonzeroInRow(k, k+1).value != 0)
+            continue;
+        return;
+    }
+}
+
+template<>
+SmithForm<bool> Matrix<bool>::getSmithForm() const{
+    Matrix<bool> B(*this);
+    Matrix<bool> Q(rows);
+    Matrix<bool> Qinv(rows);
+    Matrix<bool> R(cols);
+    Matrix<bool> Rinv(cols);
+    if(cols == 1 && rows == 1){
+        if((*this)(0,0) == 0)
+            return SmithForm<bool>(B, Q, Qinv, R, Rinv, 0, 0);
+        if((*this)(0,0) == 1)
+            return SmithForm<bool>(B, Q, Qinv, R, Rinv, 1, 1);
+        return SmithForm<bool>(B, Q, Qinv, R, Rinv, 0, 1);
+    }
+    uint numberOfOnes = 0;
+    uint m = std::min(cols, rows);
+    while(numberOfOnes < m and B.findSmallestNonzeroInSubmatrix(numberOfOnes).value != 0){
+        getPartialSmithForm(B, Q, Qinv, R, Rinv, numberOfOnes);
+        ++numberOfOnes;
+    }
+    return SmithForm(B, Q, Qinv, R, Rinv, numberOfOnes, numberOfOnes);
+}

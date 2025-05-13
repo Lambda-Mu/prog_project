@@ -7,6 +7,12 @@
 typedef unsigned int uint;
 
 template<typename T>
+class KernelImage;
+
+template<typename T>
+class SmithForm;
+
+template<typename T>
 class Matrix{
 public:
     Matrix() : rows(0), cols(0), matrix(Vector<T>()) { }
@@ -48,6 +54,8 @@ public:
     template<typename U>
     friend Matrix<U> operator*(const Matrix<U>& a, const Matrix<U>& b);
     template<typename U>
+    friend Vector<U> operator*(const Matrix<U>& a, const Vector<U>& b);
+    template<typename U>
     friend bool operator==(const Matrix<U>& a, const Matrix<U>& b);
 
     void swapRows(uint rowA, uint rowB);
@@ -65,7 +73,12 @@ public:
     void static getColumnEchelonForm(
         Matrix<T>& matrix, Matrix<T>& columnBase, Matrix<T>& columnBaseInv, uint& lastNonzeroColumn);
 
-    void getKernelImage(Matrix<T>& kernel, Matrix<T>& image) const;
+    KernelImage<T> getKernelImage() const;
+
+    SmithForm<T> getSmithForm() const;
+
+    Vector<T> static solve(const Matrix<T>& A, const Vector<T>& b);
+    Vector<T> static solve(const SmithForm<T>& A, const Vector<T>& b);
 
 private:
     Vector<T> matrix;
@@ -114,7 +127,7 @@ private:
         Matrix<T>& matrix, Matrix<T>& columnBase, Matrix<T>& columnBaseInv, 
         uint row, uint column);
 
-    void moveMinimalNonzero(Matrix<T>& matrix, Matrix<T>& rowBase, Matrix<T>& rowBaseInv,
+    void static moveMinimalNonzero(Matrix<T>& matrix, Matrix<T>& rowBase, Matrix<T>& rowBaseInv,
         Matrix<T>& columnBase, Matrix<T>& columnBaseInv, uint diagonalEntryIndex);
 
     struct DivisibilityCheck{
@@ -131,7 +144,7 @@ private:
 
     DivisibilityCheck checkForDivisibility(uint diagonalEntryIndex) const;
 
-    void getPartialSmithForm(Matrix<T>& matrix, Matrix<T>& rowBase, Matrix<T>& rowBaseInv,
+    void static getPartialSmithForm(Matrix<T>& matrix, Matrix<T>& rowBase, Matrix<T>& rowBaseInv,
         Matrix<T>& columnBase, Matrix<T>& columnBaseInv, uint diagonalEntryIndex);
 
 };
@@ -181,6 +194,28 @@ public:
 };
 
 template<typename T>
+class SmithForm{
+public:
+    SmithForm(Matrix<T>& matrix, 
+        Matrix<T>& rowBase, Matrix<T>& rowBaseInv,
+        Matrix<T>& columnBase, Matrix<T>& columnBaseInv,
+        uint numberOfOnes, uint numberOfNonzeros) :
+        matrix(matrix), 
+        rowBase(rowBase), rowBaseInv(rowBaseInv),
+        columnBase(columnBase), columnBaseInv(columnBaseInv),
+        numberOfOnes(numberOfOnes), numberOfNonzeros(numberOfNonzeros)
+        {}
+
+    const Matrix<T> matrix;
+    const Matrix<T> rowBase;
+    const Matrix<T> rowBaseInv;
+    const Matrix<T> columnBase;
+    const Matrix<T> columnBaseInv;
+    const uint numberOfOnes;
+    const uint numberOfNonzeros;
+};
+
+template<typename T>
 Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b){
     uint size = a.rows * a.cols;
     Vector<T> sum(size, size);
@@ -199,6 +234,17 @@ Matrix<T> operator*(const Matrix<T>& a, const Matrix<T>& b){
                 product(i,j) += a(i,k) * b(k,j);
         }
     }
+    return product;
+}
+
+template<typename T>
+Vector<T> operator*(const Matrix<T>& a, const Vector<T>& b){
+    Vector<T> product(a.rowNumber(), a.rowNumber(), 0);
+    for(uint i=0; i<a.rowNumber(); ++i){
+        for(uint j=0; j<a.colNumber(); ++j)
+            product[i] += a(i,j) * b[j];
+    }
+
     return product;
 }
 
@@ -379,8 +425,8 @@ void Matrix<T>::reduceColumnValuesPartially(Matrix<T>& matrix, Matrix<T>& column
 template<typename T>
 OneIndexedValue<T> Matrix<T>::findSmallestNonzeroInRow(uint row, uint startColumn) const{
     uint indexMin = startColumn;
-    T value = absoluteValue((*this)(row, startColumn));
-    for(uint i=startColumn+1; i<cols; ++i){
+    T value = 0;
+    for(uint i=startColumn; i<cols; ++i){
         if((absoluteValue((*this)(row, i)) < value and (*this)(row, i) != 0) or value == 0){
             value = absoluteValue((*this)(row, i));
             indexMin = i;
@@ -394,8 +440,8 @@ OneIndexedValue<T> Matrix<T>::findSmallestNonzeroInRow(uint row, uint startColum
 template<typename T>
 OneIndexedValue<T> Matrix<T>::findSmallestNonzeroInColumn(uint startRow, uint column) const{
     uint indexMin = startRow;
-    T value = absoluteValue((*this)(startRow, column));
-    for(uint i=startRow+1; i<rows; ++i){
+    T value = 0;
+    for(uint i=startRow; i<rows; ++i){
         if((absoluteValue((*this)(i, column)) < value and (*this)(i, column) != 0) or value == 0){
             value = absoluteValue((*this)(i, column));
             indexMin = i;
@@ -409,19 +455,16 @@ DoubleIndexedValue<T> Matrix<T>::findSmallestNonzeroInSubmatrix(uint firstDiagon
     T value = absoluteValue((*this)(firstDiagonalEntryIndex, firstDiagonalEntryIndex));
     uint rowIndex = firstDiagonalEntryIndex;
     uint columnIndex = firstDiagonalEntryIndex;
-    uint dataIndex{};
     for(int i=firstDiagonalEntryIndex; i<rows; ++i){
-        dataIndex = index(i, firstDiagonalEntryIndex);
         for(int j=firstDiagonalEntryIndex; j<cols; ++j){
-            if( (absoluteValue(matrix[dataIndex]) < value and matrix[dataIndex] != 0) or value == 0 ){
-                value = matrix[dataIndex];
+            if( (absoluteValue((*this)(i,j)) < value and (*this)(i,j) != 0) or value == 0 ){
+                value = absoluteValue((*this)(i,j));
                 rowIndex = i;
                 columnIndex = j;
             }
-            ++dataIndex;
         }
-    }    
-    return DoubleIndexedValue<T>(value, rowIndex, columnIndex);
+    }
+    return DoubleIndexedValue<T>(rowIndex, columnIndex, value);
 }
 
 template<typename T>
@@ -511,7 +554,7 @@ void Matrix<T>::getColumnEchelonForm(Matrix<T>& matrix, Matrix<T>& columnBase, M
 }
 
 template<typename T>
-void Matrix<T>::getKernelImage(Matrix<T>& kernel, Matrix<T>& image) const{
+KernelImage<T> Matrix<T>::getKernelImage() const{
     ColumnEchelon M(*this);
     uint k = M.lastNonzeroColumn;
     return KernelImage(M.columnBase.slice(0, cols, k+1, cols), M.matrix.slice(0, rows, 0, k));
@@ -545,20 +588,102 @@ void Matrix<T>::getPartialSmithForm(Matrix<T>& matrix, Matrix<T>& rowBase, Matri
     while(1){
         uint k = diagonalEntryIndex;
         moveMinimalNonzero(matrix, rowBase, rowBaseInv, columnBase, columnBaseInv, k);
-        reducecolumnmatrixaseowPartially(matrix, rowBase, rowBaseInv, k, k);
-        if(matrix.findSmallestNonzeroInColumn(k, k+1).value != 0)
+        reduceRowValuesPartially(matrix, rowBase, rowBaseInv, k, k);
+        if(matrix.findSmallestNonzeroInColumn(k+1, k).value != 0)
             continue;
-        reduceColumnPartially(matrix, columnBase, columnBaseInv, k, k);
-        if(matrix.findSmallestNonzeroInColumn(k, k+1).value != 0)
+        reduceColumnValuesPartially(matrix, columnBase, columnBaseInv, k, k);
+        if(matrix.findSmallestNonzeroInRow(k, k+1).value != 0)
             continue;
         DivisibilityCheck div = matrix.checkForDivisibility(k);
-        if(div.divisible == 0){
+        if(div.divisible == false){
             addRowMultipleOperation(matrix, rowBase, rowBaseInv, div.rowIndex, k, 1);
-            addColumnMultipleOperation(matrix, columnBase, columnBaseInv, k, div.columnIndex, -div.quotient);
+            addColumnMultipleOperation(matrix, columnBase, columnBaseInv, k, div.columnIndex, -div.divisor);
         }
         else return;
     }
 }
 
+template<typename T>
+SmithForm<T> Matrix<T>::getSmithForm() const{
+    Matrix<T> B(*this);
+    Matrix<T> Q(rows);
+    Matrix<T> Qinv(rows);
+    Matrix<T> R(cols);
+    Matrix<T> Rinv(cols);
+    if(cols == 1 && rows == 1){
+        if((*this)(0,0) == 0)
+            return SmithForm<T>(B, Q, Qinv, R, Rinv, 0, 0);
+        if((*this)(0,0) == 1)
+            return SmithForm<T>(B, Q, Qinv, R, Rinv, 1, 1);
+        return SmithForm<T>(B, Q, Qinv, R, Rinv, 0, 1);
+    }
+    uint numberOfOnes = 0;
+    uint numberOfNonzeros = 0;
+    uint m = std::min(cols, rows);
+    while(numberOfNonzeros < m and B.findSmallestNonzeroInSubmatrix(numberOfNonzeros).value != 0){
+        getPartialSmithForm(B, Q, Qinv, R, Rinv, numberOfNonzeros);
+        if(B(numberOfNonzeros, numberOfNonzeros) < 0)
+            changeRowSignOperation(B, Q, Qinv, numberOfNonzeros);
+        if(B(numberOfNonzeros, numberOfNonzeros) == 1)
+            ++numberOfOnes;
+        ++numberOfNonzeros;
+    }
+    return SmithForm<T>(B, Q, Qinv, R, Rinv, numberOfOnes, numberOfNonzeros);
+}
+
+template<typename T>
+Vector<T> Matrix<T>::solve(const Matrix<T>& A, const Vector<T>& b){
+    SmithForm<T> smithForm = A.getSmithForm();
+    Matrix<T> B = smithForm.transformedMatrix;
+    Vector<T> c = smithForm.rowBase * b;
+    Vector<T> u;
+    u.reserve(std::min(A.rows, A.cols));
+    for(uint i=0; i<smithForm.numberOfNonzeros; ++i){
+        if(c[i] % B(i, i) == 0)
+            u.pushBack(c[i]/B(i, i));
+        else{
+            std::cerr << "[WARNING\\Matrix::solve()]: Given system has no solutions, errors may occur." << std::endl;
+            return Vector<T> {};
+        }
+    }
+    for(uint i=smithForm.numberOfNonzeros; i<A.rows; ++i){
+        if(c[i] != 0){
+            std::cerr << "[WARNING\\Matrix::solve()]: Given system has no solutions, errors may occur." << std::endl;
+            return Vector<T> {};
+        }
+        else{
+            if(i < A.cols)
+                u.pushBack(0);
+        }
+    }
+    return smithForm.rightTransformationMatrix * u;
+}
+
+template<typename T>
+Vector<T> Matrix<T>::solve(const SmithForm<T>& smithForm, const Vector<T>& b){ 
+    Matrix<T> B = smithForm.matrix;
+    Vector<T> c = smithForm.rowBase * b;
+    Vector<T> u;
+    u.reserve(std::min(smithForm.transformedMatrix.rows, smithForm.transformedMatrix.cols));
+    for(uint i=0; i<smithForm.numberOfNonzeros; ++i){
+        if(c[i] % B.get(i, i) == 0)
+            u.pushBack(c[i]/B(i, i));
+        else{
+            std::cerr << "[WARNING\\Matrix::solve()]: Given system has no solutions, errors may occur." << std::endl;
+            return Vector<T> {};
+        }
+    }
+    for(uint i=smithForm.numberOfNonzeros; i<smithForm.transformedMatrix.rows; ++i){
+        if(c[i] != 0){
+            std::cout << "[WARNING\\Matrix::solve()]: Given system has no solutions, errors may occur." << std::endl;
+            return Vector<T> {};
+        }
+        else{
+            if(i < smithForm.transformedMatrix.cols)
+                u.pushBack(0);
+        }
+    }
+    return smithForm.rightTransformationMatrix * u;
+}
 
 #endif

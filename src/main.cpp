@@ -11,13 +11,26 @@ using namespace std;
 int main(){
     srand(time(NULL));
 
-    const unsigned int N = 4; 
-    Matrix<int> id(4);
+    const uint N = 5; 
+    const uint M = 6;
+    Matrix<int> id(N, M, Vector<int>(N*M, N*M, 0));
 
-    for(int i=0; i<4; ++i){
-        for(int j=0; j<4; ++j)
-            id(i,j) = rand() % 20 -4;
+    for(int i=0; i<N; ++i){
+        for(int j=0; j<M; ++j)
+            id(i,j) = rand() % 10 -4;
     }
+
+    Matrix<int> r(N);
+    Matrix<int> rinv(N);
+    Matrix<int> c(M);
+    Matrix<int> cinv(M);
+
+    id.print();
+    // r.print();
+    // cinv.print();
+
+    SmithForm<int> smf = id.getSmithForm();
+    smf.matrix.print();
 
     // Matrix<int> copy(id);
     // Matrix<int> rowBase(4);
