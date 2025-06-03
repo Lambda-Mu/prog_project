@@ -9,6 +9,7 @@
 #include <queue>
 
 #include "Vector.hpp"
+#include "Matrix.hpp"
 #include "LefschetzComplex.hpp"
 
 using std::string, std::cout, std::map, std::set;
@@ -124,17 +125,20 @@ class CubicalComplexZ2 : public LefschetzComplex<Cube, bool>{
 public:
     CubicalComplexZ2(const CubicalSet& skeleton){
         std::queue<Cube> cubes;
+        bases = Vector<Vector<Cube>>(10, 10, Vector<Cube>{});
         for(uint i=0; i<skeleton.numberOfCubes(); ++i){
             cubes.push(skeleton[i]);
-            bases[skeleton[i].dimension()].insert(skeleton[i]);
+            bases[skeleton[i].dimension()].pushBack(skeleton[i]);
         }
 
+        incidence = Vector<map<Cube, set<Cube>>>(10, 10, map<Cube, set<Cube>>{});
         while(!cubes.empty()){
             Cube cube = cubes.front();
+            cubes.pop();
             Vector<Cube> faces = cube.getPrimaryFaces();
             for(Cube& q : faces){
                 cubes.push(q);
-                bases[q.dimension()].insert(q);
+                bases[q.dimension()].pushBack(q);
                 if(incidence[cube.dimension()].count(cube) == 1){
                     incidence[cube.dimension()][cube].insert(q);
                 }
@@ -142,16 +146,17 @@ public:
                     incidence[cube.dimension()][cube] = set<Cube>{q};
                 }
             }
-            cubes.pop();
         }
     }
 
-    bool operator()(const Cube& a, const Cube& b){
+    bool operator()(const Cube& a, const Cube& b) const{
         return incidence[a.dimension()][a].count(b);
     }
 
+    Vector<Matrix<bool>> getMatrixOfBoundaryOperator() const;
+
 private:
-    Vector<set<Cube>> bases;
+    Vector<Vector<Cube>> bases;
     Vector<map<Cube, set<Cube>>> incidence;
 };
 

@@ -118,3 +118,17 @@ std::set<Cube> CubicalSet::getAllFaces() const{
     }
     return faces;
 }
+
+Vector<Matrix<bool>> CubicalComplexZ2::getMatrixOfBoundaryOperator() const{
+    Vector<Matrix<bool>> bd;
+    bd.reserve(incidence.size());
+    for(uint i=0; i<incidence.size(); ++i){
+        Vector<bool>(bases[i].size()*bases[i+1].size());
+        for(uint k=0; k<bases[i+1].size(); ++k){
+            for(uint j=0; j<bases[i].size(); ++j)
+                if((*this)(bases[i+1][k], bases[i][j]))
+                    bd[i+1](k, j) = true;
+        }
+    }
+    return bd;
+}

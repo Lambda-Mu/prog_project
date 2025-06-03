@@ -13,6 +13,9 @@ template<typename T>
 class SmithForm;
 
 template<typename T>
+class QuotientGroup;
+
+template<typename T>
 class Matrix{
 public:
     Matrix() : rows(0), cols(0), matrix(Vector<T>()) { }
@@ -67,6 +70,7 @@ public:
 
     bool isRowZero(uint startRow, uint column) const;
     bool isColumnZero(uint startRow, uint column) const;
+    bool isZero() const;
 
     void static getRowEchelonForm(
         Matrix<T>& matrix, Matrix<T>& rowBase, Matrix<T>& rowBaseInv, uint& lastNonzeroRow);
@@ -79,6 +83,8 @@ public:
 
     Vector<T> static solve(const Matrix<T>& A, const Vector<T>& b);
     Vector<T> static solve(const SmithForm<T>& A, const Vector<T>& b);
+
+    QuotientGroup<T> static getQuotientGroup(const Matrix<T>& U, const Matrix<T>& W);
 
 private:
     Vector<T> matrix;
@@ -213,6 +219,20 @@ public:
     const Matrix<T> columnBaseInv;
     const uint numberOfOnes;
     const uint numberOfNonzeros;
+};
+
+template<typename T>
+class QuotientGroup{
+public:
+    QuotientGroup(Matrix<T>& quotientGenerator, Matrix<T>& inclusionMap,
+        uint numberOfZeroClasses, uint beginFiniteGenerators)
+        : quotientGenerator(quotientGenerator), inclusionMap(inclusionMap),
+            numberOfZeroClasses(numberOfZeroClasses), beginFiniteGenerators(beginFiniteGenerators) {}
+
+    const Matrix<T> quotientGenerator;
+    const Matrix<T> inclusionMap;
+    const uint numberOfZeroClasses;
+    const uint beginFiniteGenerators;
 };
 
 template<typename T>
@@ -486,6 +506,15 @@ bool Matrix<T>::isColumnZero(uint startRow, uint column) const{
 }
 
 template<typename T>
+bool Matrix<T>::isZero() const{
+    for(uint i=0; i<(*this).matrix.size(); ++i){
+        if((*this).data[i] != 0)
+            return false;
+    }
+    return true;
+}
+
+template<typename T>
 void Matrix<T>::prepareRow(Matrix<T>& matrix, Matrix<T>& rowBase, Matrix<T>& rowBaseInv, 
     uint row, uint column)
 {
@@ -684,6 +713,22 @@ Vector<T> Matrix<T>::solve(const SmithForm<T>& smithForm, const Vector<T>& b){
         }
     }
     return smithForm.rightTransformationMatrix * u;
+}
+
+template<typename T>
+QuotientGroup<T> Matrix<T>::getQuotientGroup(const Matrix<T>& W, const Matrix<T>& V){
+    Vector<T> a;
+    a.reserve(W.cols * V.cols);
+    SmithForm<T> smithform = W.getSmithForm();
+    for(uint i=0; i<V.cols; ++i){
+        Vector<T> x = solve(smithform, V.getColumn(i));
+        a.insert(a.end(), x.begin(), x.end());
+    }
+    Matrix<T> A = Matrix<T>(V.cols, W.cols, a).transpose();
+    SmithForm<T> smithForm = A.getSmithForm();
+    Matrix<T> Q = smithForm.leftTransformationMatrix;
+    Matrix<T> U = W*Q;
+    return QuotientGroup<T>(U, smithForm.transformedMatrix, smithForm.numberOfOnes, smithForm.numberOfNonzeros);
 }
 
 #endif
