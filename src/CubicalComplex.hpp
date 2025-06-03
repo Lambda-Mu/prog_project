@@ -125,20 +125,28 @@ class CubicalComplexZ2 : public LefschetzComplex<Cube, bool>{
 public:
     CubicalComplexZ2(const CubicalSet& skeleton){
         std::queue<Cube> cubes;
-        bases = Vector<Vector<Cube>>(10, 10, Vector<Cube>{});
+        bases = Vector<Vector<Cube>>(
+            skeleton.embeddingDimension()+1, skeleton.embeddingDimension()+1,
+            Vector<Cube>{}
+        );
         for(uint i=0; i<skeleton.numberOfCubes(); ++i){
             cubes.push(skeleton[i]);
-            bases[skeleton[i].dimension()].pushBack(skeleton[i]);
+            if(!bases[skeleton[i].dimension()].contains(skeleton[i]))
+                bases[skeleton[i].dimension()].pushBack(skeleton[i]);
         }
 
-        incidence = Vector<map<Cube, set<Cube>>>(10, 10, map<Cube, set<Cube>>{});
+        incidence = Vector<map<Cube, set<Cube>>>(
+            skeleton.embeddingDimension()+1, skeleton.embeddingDimension()+1,
+            map<Cube, set<Cube>>{}
+        );
         while(!cubes.empty()){
             Cube cube = cubes.front();
             cubes.pop();
             Vector<Cube> faces = cube.getPrimaryFaces();
             for(Cube& q : faces){
                 cubes.push(q);
-                bases[q.dimension()].pushBack(q);
+                if(!bases[q.dimension()].contains(q))
+                    bases[q.dimension()].pushBack(q);
                 if(incidence[cube.dimension()].count(cube) == 1){
                     incidence[cube.dimension()][cube].insert(q);
                 }
@@ -150,8 +158,15 @@ public:
     }
 
     bool operator()(const Cube& a, const Cube& b) const{
-        return incidence[a.dimension()][a].count(b);
+        return incidence[b.dimension()][b].count(a);
     }
+
+    Vector<Cube> base(uint dim) const { return bases[dim]; }
+    set<Cube> boundary(const Cube& cube) const{
+        if(incidence[cube.dimension()].count(cube) == 0)
+            return set<Cube>{};
+        return incidence[cube.dimension()][cube];
+    };
 
     Vector<Matrix<bool>> getMatrixOfBoundaryOperator() const;
 

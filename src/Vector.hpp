@@ -48,6 +48,7 @@ class Vector{
     void clear();
     void copyBack(const T* const dataPointer, uint numberOfObjectsToCopy);
     void copyBack(const Vector<T>& dataVector, uint begin, uint end);
+    bool contains(const T& t);
     Vector<T> slice(uint begin, uint end);
     void popBack();
     void pushBack(const T& object);
@@ -170,6 +171,15 @@ void Vector<T>::copyBack(const Vector<T>& dataVector, uint begin, uint end){
         head[length+i-begin] = dataVector[i];
     length += end - begin;
     return;
+}
+
+template<typename T>
+bool Vector<T>::contains(const T& t){
+    for(const auto& a : *this){
+        if(a == t)
+            return true;
+    }
+    return false;
 }
 
 template<typename T>

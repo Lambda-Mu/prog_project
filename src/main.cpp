@@ -15,8 +15,16 @@ int main(){
     CubicalComplexZ2 complex(skeleton);
 
     Vector<Matrix<bool>> bd = complex.getMatrixOfBoundaryOperator();
-    for(const auto& bd_k : bd)
+
+    for(uint i=0; i<=2; ++i){
+        cout << complex.base(i) << endl;
+    }
+    cout << endl;
+
+    for(const auto& bd_k : bd){
+        cout << "Matrix:\n"; 
         bd_k.print();
+    }
 
     return 0;
 }

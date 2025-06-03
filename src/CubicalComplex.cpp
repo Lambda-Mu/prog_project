@@ -38,9 +38,13 @@ bool operator==(const Block& left, const Block& right){
 }
 
 bool operator==(const Cube& left, const Cube& right){
-    if(left.dimension() != right.dimension())
+    if(left.embeddingDimension() != right.embeddingDimension())
         return false;
-    return left.buildingBlocks == right.buildingBlocks;
+    for(uint i=0; i<left.buildingBlocks.size(); ++i){
+        if(left.buildingBlocks[i] != right.buildingBlocks[i])
+            return false;
+    }
+    return true;
 }
 
 bool operator<(const Block& left, const Block& right){
@@ -54,8 +58,8 @@ bool operator<(const Block& left, const Block& right){
 }
 
 bool operator<(const Cube& left, const Cube& right){
-    uint leftEmb = left.dimension();
-    uint rightEmb = right.dimension();
+    uint leftEmb = left.embeddingDimension();
+    uint rightEmb = right.embeddingDimension();
     if(leftEmb < rightEmb)
         return true;
     if(rightEmb < leftEmb)
@@ -63,7 +67,7 @@ bool operator<(const Cube& left, const Cube& right){
     for(int i=0; i<leftEmb; ++i){
         if(left[i] < right[i])
             return true;
-        if(left[i] < right[i])
+        if(left[i] > right[i])
             return false;
     }
     return false;
@@ -92,6 +96,7 @@ Vector<Cube> Cube::getPrimaryFaces() const{
         if(!buildingBlocks[i].nonDegenerate())
             continue;
         Cube face(*this);
+        --face.dim;
         face[i].rightEnd() = (*this)[i].leftEnd(); 
         primaryFaces.pushBack(face);
         face[i].leftEnd() = (*this)[i].rightEnd();
@@ -122,12 +127,21 @@ std::set<Cube> CubicalSet::getAllFaces() const{
 Vector<Matrix<bool>> CubicalComplexZ2::getMatrixOfBoundaryOperator() const{
     Vector<Matrix<bool>> bd;
     bd.reserve(incidence.size());
-    for(uint i=0; i<incidence.size(); ++i){
-        Vector<bool>(bases[i].size()*bases[i+1].size());
+    bd.pushBack(Matrix<bool>(
+        1, bases[0].size(), 
+        Vector<bool>(bases[0].size(), bases[0].size(), 0))
+    );
+    for(uint i=0; i<incidence.size()-1; ++i){
+        Vector<bool> vec(
+            bases[i].size()*bases[i+1].size(), 
+            bases[i].size()*bases[i+1].size(), false
+        );
+        bd.pushBack(Matrix<bool>(bases[i].size(), bases[i+1].size(), vec));
         for(uint k=0; k<bases[i+1].size(); ++k){
             for(uint j=0; j<bases[i].size(); ++j)
-                if((*this)(bases[i+1][k], bases[i][j]))
-                    bd[i+1](k, j) = true;
+                if((*this)(bases[i][j], bases[i+1][k])){
+                    bd[i+1](j, k) = true;
+                }
         }
     }
     return bd;
