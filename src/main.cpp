@@ -4,6 +4,7 @@
 #include "Utilities.hpp"
 #include "Matrix.hpp"
 #include "CubicalComplex.hpp"
+#include "Homology.hpp"
 #include <vector>
 
 using namespace std;
@@ -25,6 +26,8 @@ int main(){
         cout << "Matrix:\n"; 
         bd_k.print();
     }
+
+    auto H = getHomologyGroupOfChainComplex(bd);
 
     return 0;
 }

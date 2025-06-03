@@ -48,7 +48,7 @@ public:
     inline void moveToNextColumn(uint& index) const { ++index; }
     void print(const std::string endChar = "\n", std::ostream& outputStream = std::cout) const;
     Matrix slice(uint rowBegin, uint rowEnd, uint columnBegin, uint columnEnd) const;
-    Matrix static transpose(const Matrix<T>& base);
+    // Matrix static transpose(const Matrix<T>& base);
 
     inline T operator()(uint row, uint column) const { return matrix[row*cols + column]; }
     inline T& operator()(uint row, uint column) { return matrix[row*cols + column]; }
@@ -81,10 +81,10 @@ public:
 
     SmithForm<T> getSmithForm() const;
 
-    Vector<T> static solve(const Matrix<T>& A, const Vector<T>& b);
-    Vector<T> static solve(const SmithForm<T>& A, const Vector<T>& b);
+    // Vector<T> static solve(const Matrix<T>& A, const Vector<T>& b);
+    // Vector<T> static solve(const SmithForm<T>& A, const Vector<T>& b);
 
-    QuotientGroup<T> static getQuotientGroup(const Matrix<T>& U, const Matrix<T>& W);
+    // QuotientGroup<T> static getQuotientGroup(const Matrix<T>& U, const Matrix<T>& W);
 
 private:
     Vector<T> matrix;
@@ -158,7 +158,7 @@ private:
 template<typename T>
 class RowEchelon{
 public:
-    RowEchelon(const Matrix<T>& matrix)
+    RowEchelon(Matrix<T>& matrix)
         : matrix(matrix), lastNonzeroRow(0) {
         rowBase = Matrix<T>(matrix.rowNumber());
         rowBaseInv = Matrix<T>(matrix.rowNumber());
@@ -174,7 +174,7 @@ public:
 template<typename T>
 class ColumnEchelon{
 public:
-    ColumnEchelon(const Matrix<T>& matrix)
+    ColumnEchelon(Matrix<T> matrix)
         : matrix(matrix), lastNonzeroColumn(0) {
         columnBase = Matrix<T>(matrix.rowNumber());
         columnBaseInv = Matrix<T>(matrix.rowNumber());
@@ -190,10 +190,19 @@ public:
 template<typename T>
 class KernelImage{
 public:
-    KernelImage(const Matrix<T>& matrix)
+    KernelImage() : kernel(Matrix<T>()), image(Matrix<T>()) {}
+
+    KernelImage(Matrix<T> matrix)
         : kernel(Matrix<T>()), image(Matrix<T>()) {
         getKernelImage(matrix, kernel, image);
     }
+
+    KernelImage(Matrix<T> kernel, Matrix<T> image)
+        : kernel(kernel), image(image)
+    {}
+
+    KernelImage(KernelImage& kerim)
+        : kernel(kerim.kernel), image(kerim.image) {}
 
     Matrix<T> kernel;
     Matrix<T> image;
@@ -212,13 +221,13 @@ public:
         numberOfOnes(numberOfOnes), numberOfNonzeros(numberOfNonzeros)
         {}
 
-    const Matrix<T> matrix;
-    const Matrix<T> rowBase;
-    const Matrix<T> rowBaseInv;
-    const Matrix<T> columnBase;
-    const Matrix<T> columnBaseInv;
-    const uint numberOfOnes;
-    const uint numberOfNonzeros;
+    Matrix<T> matrix;
+    Matrix<T> rowBase;
+    Matrix<T> rowBaseInv;
+    Matrix<T> columnBase;
+    Matrix<T> columnBaseInv;
+    uint numberOfOnes;
+    uint numberOfNonzeros;
 };
 
 template<typename T>
@@ -229,10 +238,28 @@ public:
         : quotientGenerator(quotientGenerator), inclusionMap(inclusionMap),
             numberOfZeroClasses(numberOfZeroClasses), beginFiniteGenerators(beginFiniteGenerators) {}
 
-    const Matrix<T> quotientGenerator;
-    const Matrix<T> inclusionMap;
-    const uint numberOfZeroClasses;
-    const uint beginFiniteGenerators;
+    QuotientGroup()
+        : quotientGenerator(Matrix<T>()), inclusionMap(Matrix<T>()),
+        numberOfZeroClasses(0), beginFiniteGenerators(0) 
+    {}
+
+    QuotientGroup(QuotientGroup& qg)
+        : quotientGenerator(qg.quotientGenerator), inclusionMap(qg.inclusionMap),
+        numberOfZeroClasses(qg.numberOfZeroClasses), beginFiniteGenerators(qg.beginFiniteGenerators)
+    {}
+
+    QuotientGroup& operator=(const QuotientGroup& qg){
+        quotientGenerator = qg.quotientGenerator;
+        inclusionMap = qg.inclusionMap;
+        numberOfZeroClasses = qg.numberOfZeroClasses;
+        beginFiniteGenerators = qg.beginFiniteGenerators;
+        return *this;
+    }
+
+    Matrix<T> quotientGenerator;
+    Matrix<T> inclusionMap;
+    uint numberOfZeroClasses;
+    uint beginFiniteGenerators;
 };
 
 template<typename T>
@@ -314,14 +341,14 @@ Matrix<T> Matrix<T>::slice(uint rowBegin, uint rowEnd, uint columnBegin, uint co
 }
 
 template<typename T>
-Matrix<T> Matrix<T>::transpose(const Matrix<T>& base){
-    Vector<T> transposed(base.cols*base.rows);
-    for(uint i=0; i<base.cols; ++i){
-        for(uint j=0; j<base.rows; ++j)
+Matrix<T> transpose(const Matrix<T>& base){
+    Vector<T> transposed(base.colNumber()*base.rowNumber());
+    for(uint i=0; i<base.colNumber(); ++i){
+        for(uint j=0; j<base.rowNumber(); ++j)
             transposed.pushBack(base(j,i));
     }
 
-    return Matrix(base.cols, base.rows, transposed);
+    return Matrix(base.colNumber(), base.rowNumber(), transposed);
 }
 
 template<typename T>
@@ -584,9 +611,9 @@ void Matrix<T>::getColumnEchelonForm(Matrix<T>& matrix, Matrix<T>& columnBase, M
 
 template<typename T>
 KernelImage<T> Matrix<T>::getKernelImage() const{
-    ColumnEchelon M(*this);
+    ColumnEchelon<T> M(*this);
     uint k = M.lastNonzeroColumn;
-    return KernelImage(M.columnBase.slice(0, cols, k+1, cols), M.matrix.slice(0, rows, 0, k));
+    return KernelImage<T>(M.columnBase.slice(0, cols, k+1, cols), M.matrix.slice(0, rows, 0, k));
 }
 
 template<typename T>
@@ -661,7 +688,7 @@ SmithForm<T> Matrix<T>::getSmithForm() const{
 }
 
 template<typename T>
-Vector<T> Matrix<T>::solve(const Matrix<T>& A, const Vector<T>& b){
+Vector<T> solve(const Matrix<T>& A, const Vector<T>& b){
     SmithForm<T> smithForm = A.getSmithForm();
     Matrix<T> B = smithForm.transformedMatrix;
     Vector<T> c = smithForm.rowBase * b;
@@ -689,46 +716,48 @@ Vector<T> Matrix<T>::solve(const Matrix<T>& A, const Vector<T>& b){
 }
 
 template<typename T>
-Vector<T> Matrix<T>::solve(const SmithForm<T>& smithForm, const Vector<T>& b){ 
+Vector<T> solve(const SmithForm<T>& smithForm, const Vector<T>& b){ 
     Matrix<T> B = smithForm.matrix;
     Vector<T> c = smithForm.rowBase * b;
     Vector<T> u;
-    u.reserve(std::min(smithForm.transformedMatrix.rows, smithForm.transformedMatrix.cols));
+    u.reserve(std::min(smithForm.matrix.rowNumber(), smithForm.matrix.colNumber()));
     for(uint i=0; i<smithForm.numberOfNonzeros; ++i){
-        if(c[i] % B.get(i, i) == 0)
+        if(c[i] % B(i, i) == 0)
             u.pushBack(c[i]/B(i, i));
         else{
             std::cerr << "[WARNING\\Matrix::solve()]: Given system has no solutions, errors may occur." << std::endl;
             return Vector<T> {};
         }
     }
-    for(uint i=smithForm.numberOfNonzeros; i<smithForm.transformedMatrix.rows; ++i){
+    for(uint i=smithForm.numberOfNonzeros; i<smithForm.matrix.rowNumber(); ++i){
         if(c[i] != 0){
             std::cout << "[WARNING\\Matrix::solve()]: Given system has no solutions, errors may occur." << std::endl;
             return Vector<T> {};
         }
         else{
-            if(i < smithForm.transformedMatrix.cols)
+            if(i < smithForm.matrix.colNumber())
                 u.pushBack(0);
         }
     }
-    return smithForm.rightTransformationMatrix * u;
+    return smithForm.rowBase * u;
 }
 
 template<typename T>
-QuotientGroup<T> Matrix<T>::getQuotientGroup(const Matrix<T>& W, const Matrix<T>& V){
+QuotientGroup<T> getQuotientGroup(const Matrix<T>& W, const Matrix<T>& V){
     Vector<T> a;
-    a.reserve(W.cols * V.cols);
+    a.reserve(W.colNumber() * V.colNumber());
     SmithForm<T> smithform = W.getSmithForm();
-    for(uint i=0; i<V.cols; ++i){
+    for(uint i=0; i<V.colNumber(); ++i){
         Vector<T> x = solve(smithform, V.getColumn(i));
-        a.insert(a.end(), x.begin(), x.end());
+        // a.pushBack(a.end(), x.begin(), x.end());
+        for(const T& e : x)
+            a.pushBack(e);
     }
-    Matrix<T> A = Matrix<T>(V.cols, W.cols, a).transpose();
+    Matrix<T> A = transpose(Matrix<T>(V.colNumber(), W.colNumber(), a));
     SmithForm<T> smithForm = A.getSmithForm();
-    Matrix<T> Q = smithForm.leftTransformationMatrix;
+    Matrix<T> Q = smithForm.columnBase;
     Matrix<T> U = W*Q;
-    return QuotientGroup<T>(U, smithForm.transformedMatrix, smithForm.numberOfOnes, smithForm.numberOfNonzeros);
+    return QuotientGroup<T>(U, smithForm.matrix, smithForm.numberOfOnes, smithForm.numberOfNonzeros);
 }
 
 #endif

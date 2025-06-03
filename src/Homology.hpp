@@ -23,7 +23,7 @@ Vector<QuotientGroup<T>> getHomologyGroupOfChainComplex(const Vector<Matrix<T>>&
     Vector<KernelImage<T>> kerIm;
     kerIm.reserve(boundaryOperator.size());
     for(uint i=0; i<boundaryOperator.size(); ++i){
-        kerIm.push_back(boundaryOperator[i].getKernelAndImage());
+        kerIm.pushBack(boundaryOperator[i].getKernelImage());
     }
     
     Vector<QuotientGroup<T>> homology;
@@ -31,11 +31,11 @@ Vector<QuotientGroup<T>> getHomologyGroupOfChainComplex(const Vector<Matrix<T>>&
     
     uint limit = boundaryOperator.size() - 1;
     for(uint i=0; i<limit; ++i){    
-        homology.push_back(getQuotientGroup(kerIm[i].kernel, kerIm[i+1].image));
+        homology.pushBack(getQuotientGroup(kerIm[i].kernel, kerIm[i+1].image));
     }
     uint rows = kerIm[limit].kernel.rowNumber();
     Matrix<T> zeroMatrix(rows, 1, Vector<T>(rows, rows, 0));
-    homology.push_back(getQuotientGroup(kerIm[limit].kernel, zeroMatrix));
+    homology.pushBack(getQuotientGroup(kerIm[limit].kernel, zeroMatrix));
     
     return homology;
 }
@@ -66,7 +66,7 @@ Vector<HomologyGroup<T>> getGeneratorsOfHomology(
 }
 
 template<typename T, typename Cell>
-Vector<HomologyGroup<T>> getHomology(const LefschetzComplex<Cell, T> K){
+Vector<HomologyGroup<T>> getHomology(const LefschetzComplex<Cell, T>& K){
     Vector<Matrix<T>> D = K.getMatrixOfBoundaryOperator();
     Vector<QuotientGroup<T>> H = getHomologyGroupOfChainComplex(D);
     Vector<HomologyGroup<T>> G = getGeneratorsOfHomology(H);
